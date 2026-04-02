@@ -8,19 +8,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background: linear-gradient(to bottom, #4a3b3b 0%, #121212 40%);
+            background: linear-gradient(to bottom, #2b1f1f 0%, #121212 40%);
             background-attachment: fixed;
             color: white;
             font-family: 'Montserrat', sans-serif;
             margin: 0;
             padding: 0;
-            padding-bottom: 100px;
+            padding-top: 340px;
+            padding-bottom: 120px;
         }
         .playlist-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 50;
             display: flex;
             align-items: flex-end;
             padding: 40px;
             gap: 20px;
+            transition: all 0.3s ease;
+            background: #2b1f1f;
+        }
+        .playlist-header.scrolled {
+            background: rgba(18, 18, 18, 0.85);
+            backdrop-filter: blur(15px);
+            padding: 15px 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         .playlist-cover {
             width: 232px;
@@ -28,23 +43,28 @@
             box-shadow: 0 4px 60px rgba(0,0,0,0.5);
             background-color: #282828;
             object-fit: cover;
+            transition: all 0.3s ease;
+            transform-origin: bottom left;
         }
-        .playlist-info p { margin: 0; font-size: 14px; font-weight: 700; }
+        .playlist-info p { margin: 0; font-size: 14px; font-weight: 700; transition: all 0.3s; }
         .playlist-info h1 {
             font-size: 80px;
             font-weight: 900;
             margin: 10px 0;
             letter-spacing: -2px;
+            transition: all 0.3s ease;
         }
-        .playlist-details {
-            font-size: 14px;
-            color: #b3b3b3;
-        }
+        .playlist-details { font-size: 14px; color: #b3b3b3; transition: all 0.3s; }
         .controls {
             padding: 20px 40px;
             display: flex;
             align-items: center;
             gap: 20px;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(30, 215, 96, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(30, 215, 96, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(30, 215, 96, 0); }
         }
         .play-btn {
             width: 56px;
@@ -58,109 +78,88 @@
             font-size: 24px;
             cursor: pointer;
             border: none;
-            transition: transform 0.1s;
+            transition: transform 0.2s, background-color 0.2s;
+            animation: pulse 2s infinite;
         }
-        .play-btn:hover { transform: scale(1.05); background-color: #1fdf64; }
-        .tracklist {
-            padding: 0 40px 40px 40px;
-            width: calc(100% - 80px);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            color: #b3b3b3;
-        }
-        th {
-            border-bottom: 1px solid #282828;
-            padding: 10px;
-            font-weight: 400;
-            font-size: 14px;
-        }
-        td {
-            padding: 10px;
-        }
-        tr:hover td {
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-        }
-
-        /* Hover efek angka jadi play */
+        .play-btn:hover { transform: scale(1.1); background-color: #1fdf64; }
+        .tracklist { padding: 0 40px 40px 40px; width: calc(100% - 80px); }
+        table { width: 100%; border-collapse: collapse; text-align: left; color: #b3b3b3; }
+        th { border-bottom: 1px solid #282828; padding: 10px; font-weight: 400; font-size: 14px; }
+        td { padding: 10px; transition: background-color 0.2s; }
+        tr { transition: transform 0.2s ease; }
+        tr:hover { transform: translateX(10px); }
+        tr:hover td { background-color: rgba(255,255,255,0.05); color: white; cursor: pointer; }
         .track-num { display: inline-block; width: 15px; }
-        .track-play { display: none; width: 15px; }
+        .track-play { display: none; width: 15px; color: white; }
         tr:hover .track-num { display: none; }
-        tr:hover .track-play { display: inline-block; color: white; }
-        
-        .track-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: white;
-        }
-        .track-title img { width: 40px; height: 40px; background-color: #282828; object-fit: cover; }
+        tr:hover .track-play { display: inline-block; }
+        .track-title { display: flex; align-items: center; gap: 15px; color: white; }
+        .track-title img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
         .track-title div { display: flex; flex-direction: column; }
         .artist { font-size: 14px; color: #b3b3b3; }
         
-        /* Style Player Bawah */
+        /* PEMUTAR CUSTOM DI BAWAH */
         .player-container {
-            position: fixed; 
-            bottom: 0; 
-            width: 100%; 
-            background-color: #181818; 
-            border-top: 1px solid #282828; 
-            padding: 15px 0; 
-            display: flex; 
-            justify-content: center; 
-            z-index: 100;
+            position: fixed; bottom: 0; width: 100%; 
+            background: rgba(24, 24, 24, 0.95); backdrop-filter: blur(10px);
+            border-top: 1px solid #282828; padding: 20px 0; 
+            display: flex; justify-content: center; align-items: center; z-index: 100;
         }
-        audio {
+        .progress-area {
             width: 60%;
-            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #b3b3b3;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .progress-bar-bg {
+            flex-grow: 1;
+            height: 6px;
+            background-color: #535353;
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #1ed760;
+            border-radius: 3px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: width 0.1s linear, background-color 0.2s;
+        }
+        .progress-bar-bg:hover .progress-bar-fill {
+            background-color: #1fdf64;
         }
 
-        /* --- CSS KHUSUS HP (RESPONSIVE) --- */
+        .visualizer { display: none; align-items: flex-end; gap: 2px; height: 14px; width: 15px; }
+        .visualizer .bar { width: 3px; background-color: #1ed760; animation: bounce 0.5s infinite alternate; }
+        .visualizer .bar:nth-child(1) { animation-delay: 0.1s; }
+        .visualizer .bar:nth-child(2) { animation-delay: 0.3s; }
+        .visualizer .bar:nth-child(3) { animation-delay: 0s; }
+        .visualizer .bar:nth-child(4) { animation-delay: 0.2s; }
+        @keyframes bounce { 0% { height: 3px; } 100% { height: 14px; } }
+        tr.playing .visualizer { display: flex; }
+        tr.playing .track-num, tr.playing:hover .track-play { display: none !important; }
+        tr.playing .track-title span:first-child { color: #1ed760; }
         @media (max-width: 768px) {
-            .playlist-header {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                padding: 20px 15px;
-            }
-            .playlist-cover {
-                width: 180px;
-                height: 180px;
-            }
-            .playlist-info h1 {
-                font-size: 35px; 
-                line-height: 1.1;
-                margin: 15px 0;
-            }
-            .controls {
-                justify-content: center; 
-                padding: 10px 20px 30px;
-            }
-            .tracklist {
-                padding: 0 10px 100px 10px;
-                width: 100%;
-                box-sizing: border-box;
-                overflow-x: auto; 
-            }
-            .track-title {
-                gap: 10px;
-            }
-            .track-title img {
-                width: 35px; 
-                height: 35px;
-            }
-            th, td {
-                padding: 10px 5px;
-                font-size: 13px;
-            }
-            .player-container audio {
-                width: 95%;
-            }
+            body { padding-top: 250px; }
+            .playlist-header { padding: 20px 15px; gap: 15px; }
+            .playlist-header.scrolled { padding: 10px 15px; }
+            .playlist-cover { width: 140px; height: 140px; }
+            .playlist-header.scrolled .playlist-cover { width: 50px; height: 50px; border-radius: 5px; }
+            .playlist-info h1 { font-size: 28px; margin: 5px 0; }
+            .playlist-header.scrolled .playlist-info h1 { font-size: 18px; }
+            .playlist-header.scrolled .playlist-details { display: none; }
+            .controls { justify-content: center; padding: 10px 20px 20px; }
+            .tracklist { padding: 0 10px 100px 10px; width: 100%; box-sizing: border-box; overflow-x: auto; }
+            th, td { padding: 10px 5px; font-size: 13px; }
+            tr:hover { transform: translateX(0); }
+            .progress-area { width: 90%; }
         }
     </style>
 </head>
@@ -178,7 +177,7 @@
 
     <div class="controls">
         <button class="play-btn"><i class="fa-solid fa-play"></i></button>
-        <a href="https://drive.google.com/drive/folders/1SdSlp7dti7PFn5JP3qKGogiQLGohTEz5?usp=sharing" target="_blank" title="Buka Folder Lagu" style="color: inherit; text-decoration: none;">
+        <a href="LINK_GDRIVE_LO" target="_blank" title="Buka Folder Lagu" style="color: inherit; text-decoration: none;">
             <i class="fa-solid fa-download fa-2x" style="color: #b3b3b3; cursor: pointer;"></i>
         </a>
     </div>
@@ -194,275 +193,133 @@
                 </tr>
             </thead>
             <tbody>
-                <tr onclick="mainkanLagu('assets/musik/Harapan, Pt. 1.mp3')">
-                    <td>
-                        <span class="track-num">1</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/Harapan.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Harapan, Pt. 1</span>
-                                <span class="artist">The Cottons</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Harapan</td>
-                    <td>5:32</td>
+                <tr onclick="mainkanLagu('assets/musik/Harapan, Pt. 1.mp3', this)">
+                    <td><span class="track-num">1</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/Harapan.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Harapan, Pt. 1</span><span class="artist">The Cottons</span></div></div></td>
+                    <td>Harapan</td><td>5:32</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/Harapan, Pt. 2.mp3')">
-                    <td>
-                        <span class="track-num">2</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/Harapan.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Harapan, Pt. 2</span>
-                                <span class="artist">The Cottons</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Harapan</td>
-                    <td>5:31</td>
+                <tr onclick="mainkanLagu('assets/musik/Harapan, Pt. 2.mp3', this)">
+                    <td><span class="track-num">2</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/Harapan.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Harapan, Pt. 2</span><span class="artist">The Cottons</span></div></div></td>
+                    <td>Harapan</td><td>5:31</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/Harapan, Pt. 3.mp3')">
-                    <td>
-                        <span class="track-num">3</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/Harapan.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Harapan, Pt. 3</span>
-                                <span class="artist">The Cottons</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Harapan</td>
-                    <td>4:26</td>
+                <tr onclick="mainkanLagu('assets/musik/Harapan, Pt. 3.mp3', this)">
+                    <td><span class="track-num">3</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/Harapan.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Harapan, Pt. 3</span><span class="artist">The Cottons</span></div></div></td>
+                    <td>Harapan</td><td>4:26</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/when i was your man.mp3')">
-                    <td>
-                        <span class="track-num">4</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/BM.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>When I Was Your Man</span>
-                                <span class="artist">Bruno Mars</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Unorthodox Jukebox</td>
-                    <td>3:29</td>
+                <tr onclick="mainkanLagu('assets/musik/when i was your man.mp3', this)">
+                    <td><span class="track-num">4</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/BM.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>When I Was Your Man</span><span class="artist">Bruno Mars</span></div></div></td>
+                    <td>Unorthodox Jukebox</td><td>3:29</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/Happiness.mp3')">
-                    <td>
-                        <span class="track-num">5</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/ROC.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Happiness</span>
-                                <span class="artist">Rex Orange County</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Apricot Princess</td>
-                    <td>4:39</td>
+                <tr onclick="mainkanLagu('assets/musik/Happiness.mp3', this)">
+                    <td><span class="track-num">5</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/ROC.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Happiness</span><span class="artist">Rex Orange County</span></div></div></td>
+                    <td>Apricot Princess</td><td>4:39</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/The man who can be move.mp3')">
-                    <td>
-                        <span class="track-num">6</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/TS.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>The Man Who Can't Be Moved</span>
-                                <span class="artist">The Script</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>The Script</td>
-                    <td>3:58</td>
+                <tr onclick="mainkanLagu('assets/musik/The man who can be move.mp3', this)">
+                    <td><span class="track-num">6</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/TS.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>The Man Who Can't Be Moved</span><span class="artist">The Script</span></div></div></td>
+                    <td>The Script</td><td>3:58</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/i will fly.mp3')">
-                    <td>
-                        <span class="track-num">7</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/T2F.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>I Will Fly</span>
-                                <span class="artist">Ten2Five</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Journey</td>
-                    <td>3:27</td>
+                <tr onclick="mainkanLagu('assets/musik/i will fly.mp3', this)">
+                    <td><span class="track-num">7</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/T2F.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>I Will Fly</span><span class="artist">Ten2Five</span></div></div></td>
+                    <td>Journey</td><td>3:27</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/ours to keep.mp3')">
-                    <td>
-                        <span class="track-num">8</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/K&A.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Ours To Keep</span>
-                                <span class="artist">Kendis, adis</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>ours to keep</td>
-                    <td>3:27</td>
+                <tr onclick="mainkanLagu('assets/musik/ours to keep.mp3', this)">
+                    <td><span class="track-num">8</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/K&A.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Ours To Keep</span><span class="artist">Kendis, adis</span></div></div></td>
+                    <td>ours to keep</td><td>3:27</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/linger.mp3')">
-                    <td>
-                        <span class="track-num">9</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/TC.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Linger</span>
-                                <span class="artist">The Cranberries</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Everybody Else Is Doing It, So Why Can't We</td>
-                    <td>4:30</td>
+                <tr onclick="mainkanLagu('assets/musik/linger.mp3', this)">
+                    <td><span class="track-num">9</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/TC.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Linger</span><span class="artist">The Cranberries</span></div></div></td>
+                    <td>Everybody Else Is Doing It, So Why Can't We</td><td>4:30</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/Pudar.mp3')">
-                    <td>
-                        <span class="track-num">10</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/MR.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Pudar</span>
-                                <span class="artist">Murphy Radio</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Debu Kan Kembali Menjadi Debu</td>
-                    <td>3:56</td>
+                <tr onclick="mainkanLagu('assets/musik/Pudar.mp3', this)">
+                    <td><span class="track-num">10</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/MR.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Pudar</span><span class="artist">Murphy Radio</span></div></div></td>
+                    <td>Debu Kan Kembali Menjadi Debu</td><td>3:56</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/kasih putih.mp3')">
-                    <td>
-                        <span class="track-num">11</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/GF.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Kasih Putih</span>
-                                <span class="artist">Yovie Widianto, Glenn Fredly</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Kembali</td>
-                    <td>3:36</td>
+                <tr onclick="mainkanLagu('assets/musik/kasih putih.mp3', this)">
+                    <td><span class="track-num">11</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/GF.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Kasih Putih</span><span class="artist">Yovie Widianto, Glenn Fredly</span></div></div></td>
+                    <td>Kembali</td><td>3:36</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/about you.mp3')">
-                    <td>
-                        <span class="track-num">12</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/T1975.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>About You</span>
-                                <span class="artist">The 1975</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Being Funny In A Foreign Language</td>
-                    <td>4:54</td>
+                <tr onclick="mainkanLagu('assets/musik/about you.mp3', this)">
+                    <td><span class="track-num">12</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/T1975.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>About You</span><span class="artist">The 1975</span></div></div></td>
+                    <td>Being Funny In A Foreign Language</td><td>4:54</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/Tell Me How.mp3')">
-                    <td>
-                        <span class="track-num">13</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/snuzzle.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Tell Me How?</span>
-                                <span class="artist">Snuzzle</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Tell Me How?</td>
-                    <td>3:36</td>
+                <tr onclick="mainkanLagu('assets/musik/Tell Me How.mp3', this)">
+                    <td><span class="track-num">13</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/snuzzle.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Tell Me How?</span><span class="artist">Snuzzle</span></div></div></td>
+                    <td>Tell Me How?</td><td>3:36</td>
                 </tr>
-
-                <tr onclick="mainkanLagu('assets/musik/Sweet.mp3')">
-                    <td>
-                        <span class="track-num">14</span>
-                        <i class="fa-solid fa-play track-play"></i>
-                    </td>
-                    <td>
-                        <div class="track-title">
-                            <img src="assets/cover/CAS.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <span>Sweet</span>
-                                <span class="artist">Cigarettes After Sex</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Cigarettes After Sex</td>
-                    <td>4:48</td>
+                <tr onclick="mainkanLagu('assets/musik/Sweet.mp3', this)">
+                    <td><span class="track-num">14</span><i class="fa-solid fa-play track-play"></i><div class="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></td>
+                    <td><div class="track-title"><img src="assets/cover/CAS.jpeg" alt="Song Cover" onerror="this.src='https://via.placeholder.com/40'"><div><span>Sweet</span><span class="artist">Cigarettes After Sex</span></div></div></td>
+                    <td>Cigarettes After Sex</td><td>4:48</td>
                 </tr>
-                
-                </tbody>
+            </tbody>
         </table>
     </div>
 
     <div class="player-container">
-        <audio id="audio-player" controls>
+        <audio id="audio-player">
             <source src="" type="audio/mpeg">
-            Browser lo ga support pemutar audio.
         </audio>
+        
+        <div class="progress-area">
+            <span id="current-time">0:00</span>
+            <div class="progress-bar-bg" id="progress-bg">
+                <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+            <span id="total-time">0:00</span>
+        </div>
     </div>
 
     <script>
         const pemutar = document.getElementById("audio-player");
         const tombolPlayHijau = document.querySelector(".play-btn");
         const iconPlayHijau = tombolPlayHijau.querySelector("i");
+        const header = document.querySelector('.playlist-header');
+        
+        const progressBg = document.getElementById('progress-bg');
+        const progressFill = document.getElementById('progress-fill');
+        const currentTimeEl = document.getElementById('current-time');
+        const totalTimeEl = document.getElementById('total-time');
 
-        function mainkanLagu(fileMp3) {
+        let barisAktif = null;
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        function formatWaktu(seconds) {
+            let min = Math.floor(seconds / 60);
+            let sec = Math.floor(seconds % 60);
+            if(sec < 10) sec = `0${sec}`;
+            return `${min}:${sec}`;
+        }
+
+        function mainkanLagu(fileMp3, elemenBaris) {
+            if (barisAktif) {
+                barisAktif.classList.remove('playing');
+                barisAktif.querySelector('.visualizer').style.display = 'none';
+                barisAktif.querySelector('.track-num').style.display = 'inline-block';
+            }
+            elemenBaris.classList.add('playing');
+            elemenBaris.querySelector('.track-num').style.display = 'none';
+            elemenBaris.querySelector('.visualizer').style.display = 'flex';
+            barisAktif = elemenBaris;
+            
             pemutar.src = fileMp3;
             pemutar.play();
             iconPlayHijau.classList.remove("fa-play");
@@ -472,28 +329,78 @@
         tombolPlayHijau.onclick = function() {
             if (pemutar.paused) {
                 if (!pemutar.src || pemutar.src === window.location.href) {
-                    mainkanLagu('assets/musik/Harapan, Pt. 1.mp3'); 
+                    const barisPertama = document.querySelector('tbody tr');
+                    mainkanLagu('assets/musik/Harapan, Pt. 1.mp3', barisPertama); 
                 } else {
                     pemutar.play();
                     iconPlayHijau.classList.remove("fa-play");
                     iconPlayHijau.classList.add("fa-pause");
+                    if(barisAktif) {
+                        barisAktif.querySelector('.visualizer .bar').style.animationPlayState = 'running';
+                        barisAktif.querySelectorAll('.visualizer .bar').forEach(b => b.style.animationPlayState = 'running');
+                    }
                 }
             } else {
                 pemutar.pause();
                 iconPlayHijau.classList.remove("fa-pause");
                 iconPlayHijau.classList.add("fa-play");
+                if(barisAktif) {
+                    barisAktif.querySelectorAll('.visualizer .bar').forEach(b => b.style.animationPlayState = 'paused');
+                }
             }
         };
+
+        // Update progress bar pas lagu jalan
+        pemutar.addEventListener('timeupdate', () => {
+            const currentTime = pemutar.currentTime;
+            const duration = pemutar.duration;
+            if(duration) {
+                const progressPercent = (currentTime / duration) * 100;
+                progressFill.style.width = `${progressPercent}%`;
+                currentTimeEl.textContent = formatWaktu(currentTime);
+                totalTimeEl.textContent = formatWaktu(duration);
+            }
+        });
+
+        // Bisa di-klik buat cepetin lagu
+        progressBg.addEventListener('click', (e) => {
+            const width = progressBg.clientWidth;
+            const clickX = e.offsetX;
+            const duration = pemutar.duration;
+            if(duration) {
+                pemutar.currentTime = (clickX / width) * duration;
+            }
+        });
 
         pemutar.onpause = function() {
             iconPlayHijau.classList.remove("fa-pause");
             iconPlayHijau.classList.add("fa-play");
+            if(barisAktif) {
+                barisAktif.querySelectorAll('.visualizer .bar').forEach(b => b.style.animationPlayState = 'paused');
+            }
         };
 
         pemutar.onplay = function() {
             iconPlayHijau.classList.remove("fa-play");
             iconPlayHijau.classList.add("fa-pause");
+            if(barisAktif) {
+                barisAktif.querySelectorAll('.visualizer .bar').forEach(b => b.style.animationPlayState = 'running');
+            }
         };
+
+        // Reset icon kalau lagu habis
+        pemutar.addEventListener('ended', () => {
+             iconPlayHijau.classList.remove("fa-pause");
+             iconPlayHijau.classList.add("fa-play");
+             if(barisAktif) {
+                 barisAktif.classList.remove('playing');
+                 barisAktif.querySelector('.visualizer').style.display = 'none';
+                 barisAktif.querySelector('.track-num').style.display = 'inline-block';
+                 barisAktif = null;
+             }
+             progressFill.style.width = '0%';
+             currentTimeEl.textContent = "0:00";
+        });
     </script>
 </body>
 </html>
